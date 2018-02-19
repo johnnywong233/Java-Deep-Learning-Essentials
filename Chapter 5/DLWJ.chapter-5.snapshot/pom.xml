@@ -13,7 +13,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>(whatever version is current)</version>
+                <!--<version>(whatever version is current)</version>-->
                 <configuration>
                     <source>1.8</source>
                     <target>1.8</target>
@@ -25,7 +25,7 @@
 
     <properties>
         <nd4j.version>0.4-rc3.6</nd4j.version>
-        <dl4j.version>	0.4-rc3.6 </dl4j.version>
+        <dl4j.version>0.4-rc3.6</dl4j.version>
         <canova.version>0.0.0.12</canova.version>
         <jackson.version>2.5.1</jackson.version>
     </properties>
