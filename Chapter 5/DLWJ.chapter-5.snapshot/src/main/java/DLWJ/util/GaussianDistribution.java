@@ -2,7 +2,6 @@ package DLWJ.util;
 
 import java.util.Random;
 
-
 public final class GaussianDistribution {
 
     private final double mean;
@@ -29,13 +28,13 @@ public final class GaussianDistribution {
             r = rng.nextDouble();
         }
 
-        double c = Math.sqrt( -2.0 * Math.log(r) );
+        double c = Math.sqrt(-2.0 * Math.log(r));
 
         if (rng.nextDouble() < 0.5) {
-            return c * Math.sin( 2.0 * Math.PI * rng.nextDouble() ) * var + mean;
+            return c * Math.sin(2.0 * Math.PI * rng.nextDouble()) * var + mean;
         }
 
-        return c * Math.cos( 2.0 * Math.PI * rng.nextDouble() ) * var + mean;
+        return c * Math.cos(2.0 * Math.PI * rng.nextDouble()) * var + mean;
     }
 
 }

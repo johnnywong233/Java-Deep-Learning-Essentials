@@ -1,14 +1,11 @@
 package DLWJ.DeepNeuralNetworks;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Random;
 import DLWJ.MultiLayerNeuralNetworks.HiddenLayer;
 import DLWJ.SingleLayerNeuralNetworks.LogisticRegression;
-import static DLWJ.util.RandomGenerator.binomial;
 
+import java.util.*;
+
+import static DLWJ.util.RandomGenerator.binomial;
 
 public class Dropout {
 
@@ -22,9 +19,11 @@ public class Dropout {
 
     public Dropout(int nIn, int[] hiddenLayerSizes, int nOut, Random rng, String activation) {
 
-        if (rng == null) rng = new Random(1234);
+        if (rng == null)
+            rng = new Random(1234);
 
-        if (activation == null) activation = "ReLU";
+        if (activation == null)
+            activation = "ReLU";
 
         this.nIn = nIn;
         this.hiddenLayerSizes = hiddenLayerSizes;
@@ -47,136 +46,9 @@ public class Dropout {
         logisticLayer = new LogisticRegression(hiddenLayerSizes[nLayers - 1], nOut);
     }
 
-    public void train(double[][] X, int[][] T, int minibatchSize, double learningRate, double pDrouput) {
-
-        List<double[][]> layerInputs = new ArrayList<>(nLayers+1);
-        layerInputs.add(X);
-
-        List<int[][]> dropoutMasks = new ArrayList<>(nLayers);
-
-        double[][] Z = new double[0][0];
-        double[][] D; // delta
-
-        // forward hidden layers
-        for (int layer = 0; layer < nLayers; layer++) {
-
-            double[] x_;  // layer input
-            double[][] Z_ = new double[minibatchSize][hiddenLayerSizes[layer]];
-            int[][] mask_ = new int[minibatchSize][hiddenLayerSizes[layer]];
-
-            for (int n = 0; n < minibatchSize; n++) {
-
-                if (layer == 0) {
-                    x_ = X[n];
-                } else {
-                    x_ = Z[n];
-                }
-
-
-                Z_[n] = hiddenLayers[layer].forward(x_);
-                mask_[n] = dropout(Z_[n], pDrouput);  // apply dropout mask to units
-            }
-
-            Z = Z_;
-            layerInputs.add(Z.clone());
-
-            dropoutMasks.add(mask_);
-        }
-
-        // forward & backward output layer
-        D = logisticLayer.train(Z, T, minibatchSize, learningRate);
-
-        // backward hidden layers
-        for (int layer = nLayers - 1; layer >= 0; layer--) {
-
-            double[][] Wprev_;
-
-            if (layer == nLayers - 1) {
-                Wprev_ = logisticLayer.W;
-            } else {
-                Wprev_ = hiddenLayers[layer+1].W;
-            }
-
-            // apply mask to delta as well
-            for (int n = 0; n < minibatchSize; n++) {
-                int[] mask_ = dropoutMasks.get(layer)[n];
-
-                for (int j = 0; j < D[n].length; j++) {
-                    D[n][j] *= mask_[j];
-                }
-            }
-
-            D = hiddenLayers[layer].backward(layerInputs.get(layer), layerInputs.get(layer+1), D, Wprev_, minibatchSize, learningRate);
-        }
-    }
-
-    public int[] dropout(double[] z, double p) {
-
-        int size = z.length;
-        int[] mask = new int[size];
-
-        for (int i = 0; i < size; i++) {
-            mask[i] = binomial(1, 1 - p, rng);
-            z[i] *= mask[i]; // apply mask
-        }
-
-        return mask;
-    }
-
-    public void pretest(double pDropout) {
-
-        for (int layer = 0; layer < nLayers; layer++) {
-
-            int nIn_, nOut_;
-
-            if (layer == 0) {
-                nIn_ = nIn;
-            } else {
-                nIn_ = hiddenLayerSizes[layer];
-            }
-
-            if (layer == nLayers - 1) {
-                nOut_ = nOut;
-            } else {
-                nOut_ = hiddenLayerSizes[layer+1];
-            }
-
-            for (int j = 0; j < nOut_; j++) {
-                for (int i = 0; i < nIn_; i++) {
-                    hiddenLayers[layer].W[j][i] *= 1 - pDropout;
-                }
-            }
-        }
-    }
-
-    public Integer[] predict(double[] x) {
-
-        double[] z = new double[0];
-
-        for (int layer = 0; layer < nLayers; layer++) {
-
-            double[] x_;
-
-            if (layer == 0) {
-                x_ = x;
-            } else {
-                x_ = z.clone();
-            }
-
-            z = hiddenLayers[layer].forward(x_);
-        }
-
-        return logisticLayer.predict(z);
-    }
-
-
     public static void main(String[] args) {
 
         final Random rng = new Random(123);
-
-        //
-        // Declare variables and constants
-        //
 
         int train_N_each = 300;        // for demo
         int test_N_each = 50;          // for demo
@@ -215,10 +87,7 @@ public class Dropout {
         for (int i = 0; i < train_N; i++) minibatchIndex.add(i);
         Collections.shuffle(minibatchIndex, rng);
 
-
-        //
         // Create training data and test data for demo.
-        //
         for (int pattern = 0; pattern < patterns; pattern++) {
 
             for (int n = 0; n < train_N_each; n++) {
@@ -226,8 +95,8 @@ public class Dropout {
                 int n_ = pattern * train_N_each + n;
 
                 for (int i = 0; i < nIn; i++) {
-                    if ( (n_ >= train_N_each * pattern && n_ < train_N_each * (pattern + 1) ) &&
-                            (i >= nIn_each * pattern && i < nIn_each * (pattern + 1)) ) {
+                    if ((n_ >= train_N_each * pattern && n_ < train_N_each * (pattern + 1)) &&
+                            (i >= nIn_each * pattern && i < nIn_each * (pattern + 1))) {
                         train_X[n_][i] = binomial(1, 1 - pNoise_Training, rng) * rng.nextDouble() * .5 + .5;
                     } else {
                         train_X[n_][i] = binomial(1, pNoise_Training, rng) * rng.nextDouble() * .5 + .5;
@@ -243,14 +112,12 @@ public class Dropout {
                 }
             }
 
-
             for (int n = 0; n < test_N_each; n++) {
-
                 int n_ = pattern * test_N_each + n;
 
                 for (int i = 0; i < nIn; i++) {
-                    if ( (n_ >= test_N_each * pattern && n_ < test_N_each * (pattern + 1) ) &&
-                            (i >= nIn_each * pattern && i < nIn_each * (pattern + 1)) ) {
+                    if ((n_ >= test_N_each * pattern && n_ < test_N_each * (pattern + 1)) &&
+                            (i >= nIn_each * pattern && i < nIn_each * (pattern + 1))) {
                         test_X[n_][i] = (double) binomial(1, 1 - pNoise_Test, rng) * rng.nextDouble() * .5 + .5;
                     } else {
                         test_X[n_][i] = (double) binomial(1, pNoise_Test, rng) * rng.nextDouble() * .5 + .5;
@@ -267,7 +134,6 @@ public class Dropout {
             }
         }
 
-
         // create minibatches
         for (int j = 0; j < minibatchSize; j++) {
             for (int i = 0; i < minibatch_N; i++) {
@@ -276,19 +142,15 @@ public class Dropout {
             }
         }
 
-
-        //
         // Build Dropout model
-        //
 
         // construct Dropout
         System.out.print("Building the model...");
         Dropout classifier = new Dropout(nIn, hiddenLayerSizes, nOut, rng, "ReLU");
         System.out.println("done.");
 
-
         // train the model
-        System.out.print("Training the model...");
+        System.out.print("Training the model....");
         for (int epoch = 0; epoch < epochs; epoch++) {
             for (int batch = 0; batch < minibatch_N; batch++) {
                 classifier.train(train_X_minibatch[batch], train_T_minibatch[batch], minibatchSize, learningRate, pDropout);
@@ -309,11 +171,7 @@ public class Dropout {
             predicted_T[i] = classifier.predict(test_X[i]);
         }
 
-
-        //
         // Evaluate the model
-        //
-
         int[][] confusionMatrix = new int[patterns][patterns];
         double accuracy = 0.;
         double[] precision = new double[patterns];
@@ -353,12 +211,130 @@ public class Dropout {
         System.out.printf("Accuracy: %.1f %%\n", accuracy * 100);
         System.out.println("Precision:");
         for (int i = 0; i < patterns; i++) {
-            System.out.printf(" class %d: %.1f %%\n", i+1, precision[i] * 100);
+            System.out.printf(" class %d: %.1f %%\n", i + 1, precision[i] * 100);
         }
         System.out.println("Recall:");
         for (int i = 0; i < patterns; i++) {
-            System.out.printf(" class %d: %.1f %%\n", i+1, recall[i] * 100);
+            System.out.printf(" class %d: %.1f %%\n", i + 1, recall[i] * 100);
         }
 
+    }
+
+    public void train(double[][] X, int[][] T, int minibatchSize, double learningRate, double pDrouput) {
+
+        List<double[][]> layerInputs = new ArrayList<>(nLayers + 1);
+        layerInputs.add(X);
+
+        List<int[][]> dropoutMasks = new ArrayList<>(nLayers);
+
+        double[][] Z = new double[0][0];
+        double[][] D; // delta
+
+        // forward hidden layers
+        for (int layer = 0; layer < nLayers; layer++) {
+
+            double[] x_;  // layer input
+            double[][] Z_ = new double[minibatchSize][hiddenLayerSizes[layer]];
+            int[][] mask_ = new int[minibatchSize][hiddenLayerSizes[layer]];
+
+            for (int n = 0; n < minibatchSize; n++) {
+
+                if (layer == 0) {
+                    x_ = X[n];
+                } else {
+                    x_ = Z[n];
+                }
+
+                Z_[n] = hiddenLayers[layer].forward(x_);
+                mask_[n] = dropout(Z_[n], pDrouput);  // apply dropout mask to units
+            }
+
+            Z = Z_;
+            layerInputs.add(Z.clone());
+
+            dropoutMasks.add(mask_);
+        }
+
+        // forward & backward output layer
+        D = logisticLayer.train(Z, T, minibatchSize, learningRate);
+
+        // backward hidden layers
+        for (int layer = nLayers - 1; layer >= 0; layer--) {
+
+            double[][] Wprev_;
+
+            if (layer == nLayers - 1) {
+                Wprev_ = logisticLayer.W;
+            } else {
+                Wprev_ = hiddenLayers[layer + 1].W;
+            }
+
+            // apply mask to delta as well
+            for (int n = 0; n < minibatchSize; n++) {
+                int[] mask_ = dropoutMasks.get(layer)[n];
+
+                for (int j = 0; j < D[n].length; j++) {
+                    D[n][j] *= mask_[j];
+                }
+            }
+
+            D = hiddenLayers[layer].backward(layerInputs.get(layer), layerInputs.get(layer + 1), D, Wprev_, minibatchSize, learningRate);
+        }
+    }
+
+    private int[] dropout(double[] z, double p) {
+
+        int size = z.length;
+        int[] mask = new int[size];
+
+        for (int i = 0; i < size; i++) {
+            mask[i] = binomial(1, 1 - p, rng);
+            z[i] *= mask[i]; // apply mask
+        }
+
+        return mask;
+    }
+
+    private void pretest(double pDropout) {
+
+        for (int layer = 0; layer < nLayers; layer++) {
+
+            int nIn_, nOut_;
+
+            if (layer == 0) {
+                nIn_ = nIn;
+            } else {
+                nIn_ = hiddenLayerSizes[layer];
+            }
+
+            if (layer == nLayers - 1) {
+                nOut_ = nOut;
+            } else {
+                nOut_ = hiddenLayerSizes[layer + 1];
+            }
+
+            for (int j = 0; j < nOut_; j++) {
+                for (int i = 0; i < nIn_; i++) {
+                    hiddenLayers[layer].W[j][i] *= 1 - pDropout;
+                }
+            }
+        }
+    }
+
+    private Integer[] predict(double[] x) {
+        double[] z = new double[0];
+
+        for (int layer = 0; layer < nLayers; layer++) {
+
+            double[] x_;
+
+            if (layer == 0) {
+                x_ = x;
+            } else {
+                x_ = z.clone();
+            }
+            z = hiddenLayers[layer].forward(x_);
+        }
+        return logisticLayer.predict(z);
     }
 }

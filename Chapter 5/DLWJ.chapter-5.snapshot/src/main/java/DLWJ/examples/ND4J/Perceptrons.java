@@ -1,47 +1,21 @@
 package DLWJ.examples.ND4J;
 
-import java.util.Random;
 import DLWJ.util.GaussianDistribution;
-import static DLWJ.util.ActivationFunction.step;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.util.Random;
+
+import static DLWJ.util.ActivationFunction.step;
 
 public class Perceptrons {
 
-    public int nIn;       // dimensions of input data
     public INDArray w;
 
-
-    public Perceptrons(int nIn) {
-
-        this.nIn = nIn;
+    // dimensions of input data
+    private Perceptrons(int nIn) {
         w = Nd4j.create(new double[nIn], new int[]{nIn, 1});
-
     }
-
-    public int train(INDArray x, INDArray t, double learningRate) {
-
-        int classified = 0;
-
-        // check if the data is classified correctly
-        double c = x.mmul(w).getDouble(0) * t.getDouble(0);
-
-        // apply steepest descent method if the data is wrongly classified
-        if (c > 0) {
-            classified = 1;
-        } else {
-            w.addi(x.transpose().mul(t).mul(learningRate));
-        }
-
-        return classified;
-    }
-
-    public int predict(INDArray x) {
-
-        return step(x.mmul(w).getDouble(0));
-    }
-
 
     public static void main(String[] args) {
 
@@ -79,24 +53,24 @@ public class Perceptrons {
 
 
         // data set in class 1
-        for (int i = 0; i < train_N/2 - 1; i++) {
+        for (int i = 0; i < train_N / 2 - 1; i++) {
             train_X.put(i, 0, Nd4j.scalar(g1.random()));
             train_X.put(i, 1, Nd4j.scalar(g2.random()));
             train_T.put(i, Nd4j.scalar(1));
         }
-        for (int i = 0; i < test_N/2 - 1; i++) {
+        for (int i = 0; i < test_N / 2 - 1; i++) {
             test_X.put(i, 0, Nd4j.scalar(g1.random()));
             test_X.put(i, 1, Nd4j.scalar(g2.random()));
             test_T.put(i, Nd4j.scalar(1));
         }
 
         // data set in class 2
-        for (int i = train_N/2; i < train_N; i++) {
+        for (int i = train_N / 2; i < train_N; i++) {
             train_X.put(i, 0, Nd4j.scalar(g2.random()));
             train_X.put(i, 1, Nd4j.scalar(g1.random()));
             train_T.put(i, Nd4j.scalar(-1));
         }
-        for (int i = test_N/2; i < test_N; i++) {
+        for (int i = test_N / 2; i < test_N; i++) {
             test_X.put(i, 0, Nd4j.scalar(g2.random()));
             test_X.put(i, 1, Nd4j.scalar(g1.random()));
             test_T.put(i, Nd4j.scalar(-1));
@@ -116,7 +90,7 @@ public class Perceptrons {
         while (true) {
             int classified_ = 0;
 
-            for (int i=0; i < train_N; i++) {
+            for (int i = 0; i < train_N; i++) {
                 classified_ += classifier.train(train_X.getRow(i), train_T.getRow(i), learningRate);
             }
 
@@ -175,4 +149,26 @@ public class Perceptrons {
         System.out.printf("Precision: %.1f %%\n", precision * 100);
         System.out.printf("Recall:    %.1f %%\n", recall * 100);
 
-    }}
+    }
+
+    public int train(INDArray x, INDArray t, double learningRate) {
+
+        int classified = 0;
+
+        // check if the data is classified correctly
+        double c = x.mmul(w).getDouble(0) * t.getDouble(0);
+
+        // apply steepest descent method if the data is wrongly classified
+        if (c > 0) {
+            classified = 1;
+        } else {
+            w.addi(x.transpose().mul(t).mul(learningRate));
+        }
+
+        return classified;
+    }
+
+    private int predict(INDArray x) {
+        return step(x.mmul(w).getDouble(0));
+    }
+}

@@ -1,10 +1,11 @@
 package DLWJ.DeepNeuralNetworks;
 
+import DLWJ.util.ActivationFunction;
+
 import java.util.Random;
 import java.util.function.DoubleFunction;
-import static DLWJ.util.ActivationFunction.*;
-import static DLWJ.util.RandomGenerator.*;
 
+import static DLWJ.util.RandomGenerator.uniform;
 
 public class ConvolutionPoolingLayer {
 
@@ -24,7 +25,8 @@ public class ConvolutionPoolingLayer {
 
     public ConvolutionPoolingLayer(int[] imageSize, int channel, int nKernel, int[] kernelSize, int[] poolSize, int[] convolvedSize, int[] pooledSize, Random rng, String activation) {
 
-        if (rng == null) rng = new Random(1234);
+        if (rng == null)
+            rng = new Random(1234);
 
         if (W == null) {
 
@@ -46,8 +48,6 @@ public class ConvolutionPoolingLayer {
         }
 
         if (b == null) b = new double[nKernel];
-
-
         this.imageSize = imageSize;
         this.channel = channel;
         this.nKernel = nKernel;
@@ -57,59 +57,51 @@ public class ConvolutionPoolingLayer {
         this.pooledSize = pooledSize;
         this.rng = rng;
 
-        if (activation == "sigmoid" || activation == null) {
+        if (activation == null)
+            activation = "sigmoid";
 
-            this.activation = (double x) -> sigmoid(x);
-            this.dactivation = (double x) -> dsigmoid(x);
-
-        } else if (activation == "tanh") {
-
-            this.activation = (double x) -> tanh(x);
-            this.dactivation = (double x) -> dtanh(x);
-
-        } else if (activation == "ReLU") {
-
-            this.activation = (double x) -> ReLU(x);
-            this.dactivation = (double x) -> dReLU(x);
-
-        } else {
-            throw new IllegalArgumentException("activation function not supported");
+        switch (activation) {
+            case "sigmoid":
+                this.activation = ActivationFunction::sigmoid;
+                this.dactivation = ActivationFunction::dsigmoid;
+                break;
+            case "tanh":
+                this.activation = ActivationFunction::tanh;
+                this.dactivation = ActivationFunction::dtanh;
+                break;
+            case "ReLU":
+                this.activation = ActivationFunction::ReLU;
+                this.dactivation = ActivationFunction::dReLU;
+                break;
+            default:
+                throw new IllegalArgumentException("activation function not supported");
         }
-
     }
 
 
-    public double[][][] forward(double[][][] x, double[][][] preActivated_X, double[][][] activated_X) {
-
+    double[][][] forward(double[][][] x, double[][][] preActivated_X, double[][][] activated_X) {
         double[][][] z = this.convolve(x, preActivated_X, activated_X);
-        return  this.downsample(z);
-
+        return this.downsample(z);
     }
 
-
-    public double[][][][] backward(double[][][][] X, double[][][][] preActivated_X, double[][][][] activated_X, double[][][][] downsampled_X, double[][][][] dY, int minibatchSize, double learningRate) {
-
-        double[][][][] dZ = this.upsample(activated_X, downsampled_X, dY, minibatchSize);
+    double[][][][] backward(double[][][][] X, double[][][][] preActivated_X, double[][][][] activated_X, double[][][][] downsampled_X, double[][][][] dY, int minibatchSize, double learningRate) {
+        double[][][][] dZ = this.unSample(activated_X, downsampled_X, dY, minibatchSize);
         return this.deconvolve(X, preActivated_X, dZ, minibatchSize, learningRate);
-
     }
 
-
-
-    public double[][][] convolve(double[][][] x, double[][][] preActivated_X, double[][][] activated_X) {
-
+    private double[][][] convolve(double[][][] x, double[][][] preActivated_X, double[][][] activated_X) {
         double[][][] y = new double[nKernel][convolvedSize[0]][convolvedSize[1]];
 
         for (int k = 0; k < nKernel; k++) {
             for (int i = 0; i < convolvedSize[0]; i++) {
-                for(int j = 0; j < convolvedSize[1]; j++) {
+                for (int j = 0; j < convolvedSize[1]; j++) {
 
                     double convolved_ = 0.;
 
                     for (int c = 0; c < channel; c++) {
                         for (int s = 0; s < kernelSize[0]; s++) {
                             for (int t = 0; t < kernelSize[1]; t++) {
-                                convolved_ += W[k][c][s][t] * x[c][i+s][j+t];
+                                convolved_ += W[k][c][s][t] * x[c][i + s][j + t];
                             }
                         }
                     }
@@ -146,7 +138,7 @@ public class ConvolutionPoolingLayer {
                         for (int c = 0; c < channel; c++) {
                             for (int s = 0; s < kernelSize[0]; s++) {
                                 for (int t = 0; t < kernelSize[1]; t++) {
-                                    grad_W[k][c][s][t] += d_ * X[n][c][i+s][j+t];
+                                    grad_W[k][c][s][t] += d_ * X[n][c][i + s][j + t];
                                 }
                             }
                         }
@@ -161,7 +153,7 @@ public class ConvolutionPoolingLayer {
 
             for (int c = 0; c < channel; c++) {
                 for (int s = 0; s < kernelSize[0]; s++) {
-                    for(int t = 0; t < kernelSize[1]; t++) {
+                    for (int t = 0; t < kernelSize[1]; t++) {
                         W[k][c][s][t] -= learningRate * grad_W[k][c][s][t] / minibatchSize;
                     }
                 }
@@ -182,7 +174,7 @@ public class ConvolutionPoolingLayer {
                                     double d_ = 0.;
 
                                     if (i - (kernelSize[0] - 1) - s >= 0 && j - (kernelSize[1] - 1) - t >= 0) {
-                                        d_ = dY[n][k][i-(kernelSize[0]-1)-s][j-(kernelSize[1]-1)-t] * this.dactivation.apply(Y[n][k][i-(kernelSize[0]-1)-s][j-(kernelSize[1]-1)-t]) * W[k][c][s][t];
+                                        d_ = dY[n][k][i - (kernelSize[0] - 1) - s][j - (kernelSize[1] - 1) - t] * this.dactivation.apply(Y[n][k][i - (kernelSize[0] - 1) - s][j - (kernelSize[1] - 1) - t]) * W[k][c][s][t];
                                     }
 
                                     dX[n][c][i][j] += d_;
@@ -198,7 +190,7 @@ public class ConvolutionPoolingLayer {
     }
 
 
-    public double[][][] downsample(double[][][] x) {
+    private double[][][] downsample(double[][][] x) {
 
         double[][][] y = new double[nKernel][pooledSize[0]][pooledSize[1]];
 
@@ -212,24 +204,22 @@ public class ConvolutionPoolingLayer {
                         for (int t = 0; t < poolSize[1]; t++) {
 
                             if (s == 0 && t == 0) {
-                                max_ = x[k][poolSize[0]*i][poolSize[1]*j];
+                                max_ = x[k][poolSize[0] * i][poolSize[1] * j];
                                 continue;
                             }
-                            if (max_ < x[k][poolSize[0]*i+s][poolSize[1]*j+t]) {
-                                max_ = x[k][poolSize[0]*i+s][poolSize[1]*j+t];
+                            if (max_ < x[k][poolSize[0] * i + s][poolSize[1] * j + t]) {
+                                max_ = x[k][poolSize[0] * i + s][poolSize[1] * j + t];
                             }
                         }
                     }
-
                     y[k][i][j] = max_;
                 }
             }
         }
-
         return y;
     }
 
-    public double[][][][] upsample(double[][][][] X, double[][][][] Y, double[][][][] dY, int minibatchSize) {
+    private double[][][][] unSample(double[][][][] X, double[][][][] Y, double[][][][] dY, int minibatchSize) {
 
         double[][][][] dX = new double[minibatchSize][nKernel][convolvedSize[0]][convolvedSize[1]];
 
@@ -244,18 +234,17 @@ public class ConvolutionPoolingLayer {
 
                                 double d_ = 0.;
 
-                                if (Y[n][k][i][j] == X[n][k][poolSize[0]*i+s][poolSize[1]*j+t]) {
+                                if (Y[n][k][i][j] == X[n][k][poolSize[0] * i + s][poolSize[1] * j + t]) {
                                     d_ = dY[n][k][i][j];
                                 }
 
-                                dX[n][k][poolSize[0]*i+s][poolSize[1]*j+t] = d_;
+                                dX[n][k][poolSize[0] * i + s][poolSize[1] * j + t] = d_;
                             }
                         }
                     }
                 }
             }
         }
-
         return dX;
     }
 

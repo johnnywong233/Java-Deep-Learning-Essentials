@@ -1,6 +1,5 @@
 package DLWJ.util;
 
-
 public final class ActivationFunction {
 
     public static int step(double x) {
@@ -28,7 +27,7 @@ public final class ActivationFunction {
     }
 
     public static double ReLU(double x) {
-        if(x > 0) {
+        if (x > 0) {
             return x;
         } else {
             return 0.;
@@ -36,7 +35,7 @@ public final class ActivationFunction {
     }
 
     public static double dReLU(double y) {
-        if(y > 0) {
+        if (y > 0) {
             return 1.;
         } else {
             return 0.;
@@ -56,7 +55,7 @@ public final class ActivationFunction {
         }
 
         for (int i = 0; i < n; i++) {
-            y[i] = Math.exp( x[i] - max );
+            y[i] = Math.exp(x[i] - max);
             sum += y[i];
         }
 

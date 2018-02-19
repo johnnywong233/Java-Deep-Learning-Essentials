@@ -1,12 +1,8 @@
 package DLWJ.MultiLayerNeuralNetworks;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Random;
 import DLWJ.SingleLayerNeuralNetworks.LogisticRegression;
 
+import java.util.*;
 
 public class MultiLayerPerceptrons {
 
@@ -34,36 +30,9 @@ public class MultiLayerPerceptrons {
 
     }
 
-    public void train(double[][] X, int T[][], int minibatchSize, double learningRate) {
-
-        double[][] Z = new double[minibatchSize][nIn];  // outputs of hidden layer (= inputs of output layer)
-        double[][] dY;
-
-        // forward hidden layer
-        for (int n = 0; n < minibatchSize; n++) {
-            Z[n] = hiddenLayer.forward(X[n]);  // activate input units
-        }
-
-        // forward & backward output layer
-        dY = logisticLayer.train(Z, T, minibatchSize, learningRate);
-
-        // backward hidden layer (backpropagate)
-        hiddenLayer.backward(X, Z, dY, logisticLayer.W, minibatchSize, learningRate);
-    }
-
-    public Integer[] predict(double[] x) {
-        double[] z = hiddenLayer.output(x);
-        return logisticLayer.predict(z);
-    }
-
-
     public static void main(String[] args) {
 
         final Random rng = new Random(123);  // seed random
-
-        //
-        // Declare variables and constants
-        //
 
         final int patterns = 2;
         final int train_N = 4;
@@ -193,12 +162,34 @@ public class MultiLayerPerceptrons {
         System.out.printf("Accuracy: %.1f %%\n", accuracy * 100);
         System.out.println("Precision:");
         for (int i = 0; i < patterns; i++) {
-            System.out.printf(" class %d: %.1f %%\n", i+1, precision[i] * 100);
+            System.out.printf(" class %d: %.1f %% \n", i + 1, precision[i] * 100);
         }
         System.out.println("Recall:");
         for (int i = 0; i < patterns; i++) {
-            System.out.printf(" class %d: %.1f %%\n", i+1, recall[i] * 100);
+            System.out.printf(" class %d: %.1f %% \n", i + 1, recall[i] * 100);
         }
 
+    }
+
+    public void train(double[][] X, int T[][], int minibatchSize, double learningRate) {
+
+        double[][] Z = new double[minibatchSize][nIn];  // outputs of hidden layer (= inputs of output layer)
+        double[][] dY;
+
+        // forward hidden layer
+        for (int n = 0; n < minibatchSize; n++) {
+            Z[n] = hiddenLayer.forward(X[n]);  // activate input units
+        }
+
+        // forward & backward output layer
+        dY = logisticLayer.train(Z, T, minibatchSize, learningRate);
+
+        // backward hidden layer (backpropagate)
+        hiddenLayer.backward(X, Z, dY, logisticLayer.W, minibatchSize, learningRate);
+    }
+
+    private Integer[] predict(double[] x) {
+        double[] z = hiddenLayer.output(x);
+        return logisticLayer.predict(z);
     }
 }

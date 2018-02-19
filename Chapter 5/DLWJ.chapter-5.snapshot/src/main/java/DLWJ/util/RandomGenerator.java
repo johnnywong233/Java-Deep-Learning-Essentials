@@ -10,16 +10,15 @@ public final class RandomGenerator {
     }
 
     public static int binomial(int n, double p, Random rng) {
-        if(p < 0 || p > 1) return 0;
+        if (p < 0 || p > 1) return 0;
 
         int c = 0;
         double r;
 
-        for(int i=0; i<n; i++) {
+        for (int i = 0; i < n; i++) {
             r = rng.nextDouble();
             if (r < p) c++;
         }
-
         return c;
     }
 

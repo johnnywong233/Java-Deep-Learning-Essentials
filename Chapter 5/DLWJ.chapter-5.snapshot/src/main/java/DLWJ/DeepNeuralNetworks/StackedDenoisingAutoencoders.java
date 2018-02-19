@@ -1,20 +1,18 @@
 package DLWJ.DeepNeuralNetworks;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Random;
 import DLWJ.MultiLayerNeuralNetworks.HiddenLayer;
 import DLWJ.SingleLayerNeuralNetworks.LogisticRegression;
+
+import java.util.*;
+
 import static DLWJ.util.RandomGenerator.binomial;
 
 
 public class StackedDenoisingAutoencoders {
 
-    public int nIn;
-    public int[] hiddenLayerSizes;
-    public int nOut;
+    private int nIn;
+    private int[] hiddenLayerSizes;
+    private int nOut;
     public int nLayers;
     public DenoisingAutoencoders[] daLayers;
     public HiddenLayer[] sigmoidLayers;
@@ -38,7 +36,7 @@ public class StackedDenoisingAutoencoders {
         for (int i = 0; i < nLayers; i++) {
             int nIn_;
             if (i == 0) nIn_ = nIn;
-            else nIn_ = hiddenLayerSizes[i-1];
+            else nIn_ = hiddenLayerSizes[i - 1];
 
             // construct hidden layers with sigmoid function
             //   weight matrices and bias vectors will be shared with RBM layers
@@ -49,108 +47,8 @@ public class StackedDenoisingAutoencoders {
         }
 
         // logistic regression layer for output
-        logisticLayer = new LogisticRegression(hiddenLayerSizes[nLayers-1], nOut);
+        logisticLayer = new LogisticRegression(hiddenLayerSizes[nLayers - 1], nOut);
     }
-
-    public void pretrain(double[][][] X, int minibatchSize, int minibatch_N, int epochs, double learningRate, double corruptionLevel) {
-
-        for (int layer = 0; layer < nLayers; layer++) {
-            for (int epoch = 0; epoch < epochs; epoch++) {
-                for (int batch = 0; batch < minibatch_N; batch++) {
-
-                    double[][] X_ = new double[minibatchSize][nIn];
-                    double[][] prevLayerX_;
-
-                    // Set input data for current layer
-                    if (layer == 0) {
-                        X_ = X[batch];
-                    } else {
-
-                        prevLayerX_ = X_;
-                        X_ = new double[minibatchSize][hiddenLayerSizes[layer-1]];
-
-                        for (int i = 0; i < minibatchSize; i++) {
-                            X_[i] = sigmoidLayers[layer-1].output(prevLayerX_[i]);
-                        }
-                    }
-
-                    daLayers[layer].train(X_, minibatchSize, learningRate, corruptionLevel);
-                }
-            }
-        }
-
-    }
-
-    public void finetune(double[][] X, int[][] T, int minibatchSize, double learningRate) {
-
-        List<double[][]> layerInputs = new ArrayList<>(nLayers + 1);
-        layerInputs.add(X);
-
-        double[][] Z = new double[0][0];
-        double[][] dY;
-
-        // forward hidden layers
-        for (int layer = 0; layer < nLayers; layer++) {
-
-            double[] x_;  // layer input
-            double[][] Z_ = new double[minibatchSize][hiddenLayerSizes[layer]];
-
-            for (int n = 0; n < minibatchSize; n++) {
-
-                if (layer == 0) {
-                    x_ = X[n];
-                } else {
-                    x_ = Z[n];
-                }
-
-                Z_[n] = sigmoidLayers[layer].forward(x_);
-            }
-
-            Z = Z_;
-            layerInputs.add(Z.clone());
-        }
-
-        // forward & backward output layer
-        dY = logisticLayer.train(Z, T, minibatchSize, learningRate);
-
-        // backward hidden layers
-        double[][] Wprev;
-        double[][] dZ = new double[0][0];
-
-        for (int layer = nLayers - 1; layer >= 0; layer--) {
-
-            if (layer == nLayers - 1) {
-                Wprev = logisticLayer.W;
-            } else {
-                Wprev = sigmoidLayers[layer+1].W;
-                dY = dZ.clone();
-            }
-
-            dZ = sigmoidLayers[layer].backward(layerInputs.get(layer), layerInputs.get(layer+1), dY, Wprev, minibatchSize, learningRate);
-        }
-    }
-
-    public Integer[] predict(double[] x) {
-
-        double[] z = new double[0];
-
-        for (int layer = 0; layer < nLayers; layer++) {
-
-            double[] x_;
-
-            if (layer == 0) {
-                x_ = x;
-            } else {
-                x_ = z.clone();
-            }
-
-            z = sigmoidLayers[layer].forward(x_);
-        }
-
-        return logisticLayer.predict(z);
-    }
-
-
 
     public static void main(String[] args) {
 
@@ -214,8 +112,8 @@ public class StackedDenoisingAutoencoders {
                 int n_ = pattern * train_N_each + n;
 
                 for (int i = 0; i < nIn; i++) {
-                    if ( (n_ >= train_N_each * pattern && n_ < train_N_each * (pattern + 1) ) &&
-                            (i >= nIn_each * pattern && i < nIn_each * (pattern + 1)) ) {
+                    if ((n_ >= train_N_each * pattern && n_ < train_N_each * (pattern + 1)) &&
+                            (i >= nIn_each * pattern && i < nIn_each * (pattern + 1))) {
                         train_X[n_][i] = binomial(1, 1 - pNoise_Training, rng) * rng.nextDouble() * .5 + .5;
                     } else {
                         train_X[n_][i] = binomial(1, pNoise_Training, rng) * rng.nextDouble() * .5 + .5;
@@ -228,8 +126,8 @@ public class StackedDenoisingAutoencoders {
                 int n_ = pattern * validation_N_each + n;
 
                 for (int i = 0; i < nIn; i++) {
-                    if ( (n_ >= validation_N_each * pattern && n_ < validation_N_each * (pattern + 1) ) &&
-                            (i >= nIn_each * pattern && i < nIn_each * (pattern + 1)) ) {
+                    if ((n_ >= validation_N_each * pattern && n_ < validation_N_each * (pattern + 1)) &&
+                            (i >= nIn_each * pattern && i < nIn_each * (pattern + 1))) {
                         validation_X[n_][i] = (double) binomial(1, 1 - pNoise_Training, rng) * rng.nextDouble() * .5 + .5;
                     } else {
                         validation_X[n_][i] = (double) binomial(1, pNoise_Training, rng) * rng.nextDouble() * .5 + .5;
@@ -251,8 +149,8 @@ public class StackedDenoisingAutoencoders {
                 int n_ = pattern * test_N_each + n;
 
                 for (int i = 0; i < nIn; i++) {
-                    if ( (n_ >= test_N_each * pattern && n_ < test_N_each * (pattern + 1) ) &&
-                            (i >= nIn_each * pattern && i < nIn_each * (pattern + 1)) ) {
+                    if ((n_ >= test_N_each * pattern && n_ < test_N_each * (pattern + 1)) &&
+                            (i >= nIn_each * pattern && i < nIn_each * (pattern + 1))) {
                         test_X[n_][i] = (double) binomial(1, 1 - pNoise_Test, rng) * rng.nextDouble() * .5 + .5;
                     } else {
                         test_X[n_][i] = (double) binomial(1, pNoise_Test, rng) * rng.nextDouble() * .5 + .5;
@@ -305,14 +203,13 @@ public class StackedDenoisingAutoencoders {
             }
             finetuneLearningRate *= 0.98;
         }
-        System.out.println("done.");
+        System.out.println("done..");
 
 
         // test
         for (int i = 0; i < test_N; i++) {
             predicted_T[i] = classifier.predict(test_X[i]);
         }
-
 
 
         //
@@ -358,12 +255,110 @@ public class StackedDenoisingAutoencoders {
         System.out.printf("Accuracy: %.1f %%\n", accuracy * 100);
         System.out.println("Precision:");
         for (int i = 0; i < patterns; i++) {
-            System.out.printf(" class %d: %.1f %%\n", i+1, precision[i] * 100);
+            System.out.printf(" class %d: %.1f %%\n", i + 1, precision[i] * 100);
         }
         System.out.println("Recall:");
         for (int i = 0; i < patterns; i++) {
-            System.out.printf(" class %d: %.1f %%\n", i+1, recall[i] * 100);
+            System.out.printf(" class %d: %.1f %%\n", i + 1, recall[i] * 100);
         }
 
+    }
+
+    public void pretrain(double[][][] X, int minibatchSize, int minibatch_N, int epochs, double learningRate, double corruptionLevel) {
+
+        for (int layer = 0; layer < nLayers; layer++) {
+            for (int epoch = 0; epoch < epochs; epoch++) {
+                for (int batch = 0; batch < minibatch_N; batch++) {
+
+                    double[][] X_ = new double[minibatchSize][nIn];
+                    double[][] prevLayerX_;
+
+                    // Set input data for current layer
+                    if (layer == 0) {
+                        X_ = X[batch];
+                    } else {
+
+                        prevLayerX_ = X_;
+                        X_ = new double[minibatchSize][hiddenLayerSizes[layer - 1]];
+
+                        for (int i = 0; i < minibatchSize; i++) {
+                            X_[i] = sigmoidLayers[layer - 1].output(prevLayerX_[i]);
+                        }
+                    }
+
+                    daLayers[layer].train(X_, minibatchSize, learningRate, corruptionLevel);
+                }
+            }
+        }
+
+    }
+
+    public void finetune(double[][] X, int[][] T, int minibatchSize, double learningRate) {
+
+        List<double[][]> layerInputs = new ArrayList<>(nLayers + 1);
+        layerInputs.add(X);
+
+        double[][] Z = new double[0][0];
+        double[][] dY;
+
+        // forward hidden layers
+        for (int layer = 0; layer < nLayers; layer++) {
+
+            double[] x_;  // layer input
+            double[][] Z_ = new double[minibatchSize][hiddenLayerSizes[layer]];
+
+            for (int n = 0; n < minibatchSize; n++) {
+
+                if (layer == 0) {
+                    x_ = X[n];
+                } else {
+                    x_ = Z[n];
+                }
+
+                Z_[n] = sigmoidLayers[layer].forward(x_);
+            }
+
+            Z = Z_;
+            layerInputs.add(Z.clone());
+        }
+
+        // forward & backward output layer
+        dY = logisticLayer.train(Z, T, minibatchSize, learningRate);
+
+        // backward hidden layers
+        double[][] Wprev;
+        double[][] dZ = new double[0][0];
+
+        for (int layer = nLayers - 1; layer >= 0; layer--) {
+
+            if (layer == nLayers - 1) {
+                Wprev = logisticLayer.W;
+            } else {
+                Wprev = sigmoidLayers[layer + 1].W;
+                dY = dZ.clone();
+            }
+
+            dZ = sigmoidLayers[layer].backward(layerInputs.get(layer), layerInputs.get(layer + 1), dY, Wprev, minibatchSize, learningRate);
+        }
+    }
+
+    public Integer[] predict(double[] x) {
+
+        double[] z = new double[0];
+
+        for (int layer = 0; layer < nLayers; layer++) {
+
+            double[] x_;
+
+            if (layer == 0) {
+                x_ = x;
+            } else {
+                x_ = z.clone();
+            }
+
+            z = sigmoidLayers[layer].forward(x_);
+        }
+
+        return logisticLayer.predict(z);
     }
 }

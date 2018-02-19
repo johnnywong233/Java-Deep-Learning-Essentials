@@ -1,20 +1,22 @@
 package DLWJ.MultiLayerNeuralNetworks;
 
+import DLWJ.util.ActivationFunction;
+
 import java.util.Random;
 import java.util.function.DoubleFunction;
-import static DLWJ.util.ActivationFunction.*;
-import static DLWJ.util.RandomGenerator.*;
 
+import static DLWJ.util.RandomGenerator.binomial;
+import static DLWJ.util.RandomGenerator.uniform;
 
 public class HiddenLayer {
 
-    public int nIn;
-    public int nOut;
     public double[][] W;
     public double[] b;
     public Random rng;
-    public DoubleFunction<Double> activation;
-    public DoubleFunction<Double> dactivation;
+    private int nIn;
+    private int nOut;
+    private DoubleFunction<Double> activation;
+    private DoubleFunction<Double> dactivation;
 
     public HiddenLayer(int nIn, int nOut, double[][] W, double[] b, Random rng, String activation) {
 
@@ -25,8 +27,8 @@ public class HiddenLayer {
             W = new double[nOut][nIn];
             double w_ = 1. / nIn;
 
-            for(int j = 0; j < nOut; j++) {
-                for(int i = 0; i < nIn; i++) {
+            for (int j = 0; j < nOut; j++) {
+                for (int i = 0; i < nIn; i++) {
                     W[j][i] = uniform(-w_, w_, rng);  // initialize W with uniform distribution
                 }
             }
@@ -41,25 +43,22 @@ public class HiddenLayer {
         this.b = b;
         this.rng = rng;
 
-        if (activation == "sigmoid" || activation == null) {
-
-            this.activation = (double x) -> sigmoid(x);
-            this.dactivation = (double x) -> dsigmoid(x);
-
-        } else if (activation == "tanh") {
-
-            this.activation = (double x) -> tanh(x);
-            this.dactivation = (double x) -> dtanh(x);
-
-        } else if (activation == "ReLU") {
-
-            this.activation = (double x) -> ReLU(x);
-            this.dactivation = (double x) -> dReLU(x);
-
-        } else {
-            throw new IllegalArgumentException("activation function not supported");
+        switch (activation) {
+            case "sigmoid":
+                this.activation = ActivationFunction::sigmoid;
+                this.dactivation = ActivationFunction::dsigmoid;
+                break;
+            case "tanh":
+                this.activation = ActivationFunction::tanh;
+                this.dactivation = ActivationFunction::dtanh;
+                break;
+            case "ReLU":
+                this.activation = ActivationFunction::ReLU;
+                this.dactivation = ActivationFunction::dReLU;
+                break;
+            default:
+                throw new IllegalArgumentException("activation function not supported");
         }
-
     }
 
     public double[] output(double[] x) {
@@ -81,7 +80,6 @@ public class HiddenLayer {
     }
 
     public int[] outputBinomial(int[] x, Random rng) {
-
         int[] y = new int[nOut];
 
         double[] xCast = new double[x.length];
@@ -94,7 +92,6 @@ public class HiddenLayer {
         for (int j = 0; j < nOut; j++) {
             y[j] = binomial(1, out[j], rng);
         }
-
         return y;
     }
 
@@ -131,7 +128,7 @@ public class HiddenLayer {
 
         // update params
         for (int j = 0; j < nOut; j++) {
-            for(int i = 0; i < nIn; i++) {
+            for (int i = 0; i < nIn; i++) {
                 W[j][i] -= learningRate * grad_W[j][i] / minibatchSize;
             }
             b[j] -= learningRate * grad_b[j] / minibatchSize;
